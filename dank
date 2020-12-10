@@ -1,0 +1,88 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+VERSION="1.0.0"
+FLAG_SERVE="false"
+
+dir=$(mktemp /tmp/memes-XXXXX)
+
+subs=(
+  "memes"
+  "linuxmasterrace"
+  "linuxmemes"
+  "me_irl"
+  "programmerhumor"
+)
+
+function download_memes() {
+  # Wget sometimes fails to download from some domains blocking scripting, this is fine and we should continue to process
+  set +e
+  
+  wget -q -O - "https://reddit.com/r/${1}/top.json?t=day" \
+    | jq '.data.children[].data.url' \
+    | grep -E '(png|jpg|jpeg|gif)' \
+    | xargs -P 32 wget -q -P "${dir}"
+
+  set -e
+}
+
+# Create an html page with all of the images
+function serve_html() {
+  html_file="${dir}/index.html"
+  echo "exporting images to html file ${html_file}" >&2
+
+  echo '
+  <style>
+  img {
+    max-width: 100%;
+  }
+
+  ul {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+  }
+
+  li {
+    list-style: none;
+    padding: 10px;
+  }
+  </style>
+  <ul>
+  ' > "${html_file}"
+  find "${dir}" -type f -printf '%f\n' | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
+  echo '</ul>' >> "${html_file}"
+
+  # Use the built in python http server
+  python -m http.server --directory "${dir}"
+}
+
+function parse_args() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      -v | --version) echo "${VERSION}"; exit 0 ;;
+      -s | --serve) FLAG_SERVE="true" ;;
+      *) ;;
+    esac
+    shift
+  done
+}
+
+
+function main() {
+  parse_args "$@"
+
+  for i in "${subs[@]}"; do
+    echo "Downloading memes from /r/${i}" >&2
+    download_memes "${i}"
+  done
+
+  echo "${dir}"
+
+  if [[ "${FLAG_SERVE}" = "true" ]]; then
+    serve_html
+  fi
+}
+main "$@"
