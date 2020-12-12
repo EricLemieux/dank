@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.1.0"
+VERSION="1.2.0"
 FLAG_SERVE="false"
 
 dir=$(mktemp /tmp/memes-XXXXX)
@@ -37,7 +37,7 @@ function download_memes() {
 # Create an html page with all of the images
 function serve_html() {
   html_file="${dir}/index.html"
-  echo "exporting images to html file ${html_file}" >&2
+  log::info "exporting images to html file ${html_file}"
 
   echo '
   <style>
@@ -72,6 +72,7 @@ function parse_args() {
     case "$1" in
       -v | --version) echo "${VERSION}"; exit 0 ;;
       -s | --serve) FLAG_SERVE="true" ;;
+      --subs) IFS=',' read -ra subs <<< "${2}"; shift ;;
       *) dir="${1}";;
     esac
     shift
@@ -81,6 +82,9 @@ function parse_args() {
 # Script entrypoint.
 function main() {
   parse_args "$@"
+
+  log::info "Downloading to ${dir}"
+  log::info "Collecting content from these subs [${subs[*]}]"
 
   for i in "${subs[@]}"; do
     log::info "Downloading memes from /r/${i}"
