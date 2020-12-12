@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.0.0"
+VERSION="1.1.0"
 FLAG_SERVE="false"
 
 dir=$(mktemp /tmp/memes-XXXXX)
@@ -15,13 +15,20 @@ subs=(
   "programmerhumor"
 )
 
+# Logging utilities
+function log::_timestamp() { date +'%Y-%m-%dT%H:%M:%S%z'; }
+function log::info() { echo "$(log::_timestamp) [INFO] $*" >&2; }
+function log::warn() { echo "$(log::_timestamp) [WARN] $*" >&2; }
+function log::error() { echo "$(log::_timestamp) [ERROR] $*" >&2; }
+
+# Using the reddit api find the top posts and download the images into the directory.
 function download_memes() {
   # Wget sometimes fails to download from some domains blocking scripting, this is fine and we should continue to process
   set +e
   
   wget -q -O - "https://reddit.com/r/${1}/top.json?t=day" \
     | jq '.data.children[].data.url' \
-    | grep -E '(png|jpg|jpeg|gif)' \
+    | grep -E '(png|jpg|jpeg)' \
     | xargs -P 32 wget -q -P "${dir}"
 
   set -e
@@ -59,23 +66,24 @@ function serve_html() {
   python -m http.server --directory "${dir}"
 }
 
+# Parse script arguments.
 function parse_args() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
       -v | --version) echo "${VERSION}"; exit 0 ;;
       -s | --serve) FLAG_SERVE="true" ;;
-      *) ;;
+      *) dir="${1}";;
     esac
     shift
   done
 }
 
-
+# Script entrypoint.
 function main() {
   parse_args "$@"
 
   for i in "${subs[@]}"; do
-    echo "Downloading memes from /r/${i}" >&2
+    log::info "Downloading memes from /r/${i}"
     download_memes "${i}"
   done
 
