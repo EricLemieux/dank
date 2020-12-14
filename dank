@@ -2,8 +2,9 @@
 
 set -euo pipefail
 
-VERSION="1.3.2"
+VERSION="1.3.3"
 FLAG_SERVE="false"
+MAX_PROCESSES="32"
 
 dir=$(mktemp /tmp/memes-XXXXX); export dir
 
@@ -31,7 +32,7 @@ function download_memes() {
   wget -q -O - "https://reddit.com/r/${1}/top.json?t=day" \
     | jq '.data.children[].data.url' \
     | grep -E '(png|jpg|jpeg)' \
-    | xargs -P 0 wget -nc -q -P "${dir}"
+    | xargs -P "${MAX_PROCESSES}" wget -nc -q -P "${dir}"
 
   log::info "Finished downloading from /r/${1}"
 
@@ -91,7 +92,7 @@ function main() {
   log::info "Collecting content from these subs [$(printf '%s,' "${subs[@]}")]"
 
   printf '%s\0' "${subs[@]}" \
-    | xargs -P 0 -n 1 -0 -I '{}' bash -c 'download_memes "{}"'
+    | xargs -P "${MAX_PROCESSES}" -n 1 -0 -I '{}' bash -c 'download_memes "{}"'
 
   echo "${dir}"
 
