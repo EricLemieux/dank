@@ -2,10 +2,16 @@ name: build
 on: [push]
 jobs:
   build:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        platform: [ ubuntu-latest, macos-latest ]
+    runs-on: ${{ matrix.platform }}
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Setup shellcheck on MacOs
+        if: ${{ matrix.platform == 'macos-latest' }}
+        run: brew install shellcheck
       - name: run build
         run: make
       - name: run the application
