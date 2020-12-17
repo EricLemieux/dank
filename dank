@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.4.0"
+VERSION="1.4.1"
 FLAG_SERVE="false"
 MAX_PROCESSES="32"; export MAX_PROCESSES
 
@@ -60,11 +60,11 @@ function serve_html() {
   </style>
   <ul>
   ' > "${html_file}"
-  find "${dir}" -type f -printf '%f\n' | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
+  (cd "${dir}" && find . -type f) | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
   echo '</ul>' >> "${html_file}"
 
   # Use the built in python http server
-  python -m http.server --directory "${dir}"
+  python3 -m http.server --directory "${dir}"
 }
 
 # Parse script arguments.
