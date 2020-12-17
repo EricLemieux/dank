@@ -8,6 +8,15 @@ Download memes from reddit in parallel so that you can more efficiently waste ti
 make && sudo make install
 ```
 
+### MacOS
+
+I have set up a specialized homebrew tap that can be used to install if you don't want to go through the make process.
+
+```shell
+brew tap ericlemieux/tap
+brew install ericlemieux/tap/dank
+```
+
 ## Usage
 
 Download memes and then the user can view them however they want.
