@@ -2,11 +2,11 @@
 
 set -euo pipefail
 
-VERSION="1.4.1"
+VERSION="1.4.2"
 FLAG_SERVE="false"
 MAX_PROCESSES="32"; export MAX_PROCESSES
 
-dir=$(mktemp /tmp/memes-XXXXX); export dir
+dir=$(mktemp -d); export dir
 
 subs=(
   "memes"
