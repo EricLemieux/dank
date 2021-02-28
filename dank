@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.5.0"
+VERSION="1.5.1"
 FLAG_SERVE="false"
 MAX_PROCESSES="32"; export MAX_PROCESSES
 
@@ -81,6 +81,9 @@ function parse_args() {
 # Script entrypoint.
 function main() {
   parse_args "$@"
+
+  # Create the directory if it doesn't currently exist
+  mkdir -p "${dir}"
 
   log::info "Downloading to ${dir}"
   log::info "Collecting content from these subs [$(printf '%s,' "${subs[@]}")]"
