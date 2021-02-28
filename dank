@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.4.2"
+VERSION="1.5.0"
 FLAG_SERVE="false"
 MAX_PROCESSES="32"; export MAX_PROCESSES
 
@@ -36,7 +36,7 @@ function download_memes() {
 }; export -f download_memes
 
 # Create an html page with all of the images
-function serve_html() {
+function build_html() {
   html_file="${dir}/index.html"
   log::info "exporting images to html file ${html_file}"
 
@@ -60,11 +60,9 @@ function serve_html() {
   </style>
   <ul>
   ' > "${html_file}"
-  (cd "${dir}" && find . -type f) | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
+  ls "${dir}" -t | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
   echo '</ul>' >> "${html_file}"
 
-  # Use the built in python http server
-  python3 -m http.server --directory "${dir}"
 }
 
 # Parse script arguments.
@@ -90,10 +88,14 @@ function main() {
   printf '%s\0' "${subs[@]}" \
     | xargs -P "${MAX_PROCESSES}" -n 1 -0 -I '{}' bash -c 'download_memes "{}"'
 
+  # Assemble an html file that describes the directory
+  build_html
+
   echo "${dir}"
 
   if [[ "${FLAG_SERVE}" = "true" ]]; then
-    serve_html
+    # Use the built in python http server
+    python3 -m http.server --directory "${dir}"
   fi
 }
 main "$@"
