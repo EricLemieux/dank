@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.5.2"
+VERSION="1.5.3"
 FLAG_SERVE="false"
 
 dir=$(mktemp -d); export dir
@@ -64,7 +64,7 @@ function build_html() {
   </style>
   <ul>
   ' > "${html_file}"
-  (cd "${dir}" && find . -type f) | grev -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
+  (cd "${dir}" && find . -type f) | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
   echo '</ul>' >> "${html_file}"
 
 }
