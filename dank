@@ -2,9 +2,8 @@
 
 set -euo pipefail
 
-VERSION="1.5.1"
+VERSION="1.5.2"
 FLAG_SERVE="false"
-MAX_PROCESSES="32"; export MAX_PROCESSES
 
 dir=$(mktemp -d); export dir
 
@@ -20,19 +19,24 @@ function log::error() { echo "$(log::_timestamp) [ERROR] $*" >&2; }; export -f l
 
 # Using the reddit api find the top posts and download the images into the directory.
 function download_memes() {
-  # Wget sometimes fails to download from some domains blocking scripting, this is fine and we should continue to process
-  set +e
+  if [[ -z "${1}" ]]; then
+    log::error "Missing subreddit name, skipping"
+  else
 
-  log::info "Downloading memes from /r/${1}"
+    # Wget sometimes fails to download from some domains blocking scripting, this is fine and we should continue to process
+    set +e
+
+    log::info "Downloading memes from /r/${1}"
   
-  wget -q -O - "https://reddit.com/r/${1}/top.json?t=day" \
-    | jq '.data.children[].data.url' \
-    | grep -E '(png|jpg|jpeg)' \
-    | xargs -P "${MAX_PROCESSES}" wget -nc -q -P "${dir}"
+    wget -q -O - "https://reddit.com/r/${1}/top.json?t=day" \
+      | jq '.data.children[].data.url' \
+      | grep -E '(png|jpg|jpeg)' \
+      | xargs --max-procs 0 wget -nc -q -P "${dir}"
 
-  log::info "Finished downloading from /r/${1}"
+    log::info "Finished downloading from /r/${1}"
 
-  set -e
+    set -e
+  fi
 }; export -f download_memes
 
 # Create an html page with all of the images
@@ -60,7 +64,7 @@ function build_html() {
   </style>
   <ul>
   ' > "${html_file}"
-  ls "${dir}" -t | grep -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
+  (cd "${dir}" && find . -type f) | grev -v html | xargs -I {} echo '<li><img src="{}" /></li>' >> "${html_file}"
   echo '</ul>' >> "${html_file}"
 
 }
@@ -88,8 +92,8 @@ function main() {
   log::info "Downloading to ${dir}"
   log::info "Collecting content from these subs [$(printf '%s,' "${subs[@]}")]"
 
-  printf '%s\0' "${subs[@]}" \
-    | xargs -P "${MAX_PROCESSES}" -n 1 -0 -I '{}' bash -c 'download_memes "{}"'
+  printf '%s\n' "${subs[@]}" \
+    | xargs --max-procs 0 -I "{}" bash -c 'download_memes "{}"'
 
   # Assemble an html file that describes the directory
   build_html
