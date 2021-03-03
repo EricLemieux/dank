@@ -8,3 +8,4 @@ build:
 .PHONY: install
 install: build
 	install $(CMD) $(INSTALL_DIR)
+	dank --version

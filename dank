@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-VERSION="1.5.3"
+VERSION="1.5.4"
 FLAG_SERVE="false"
 
 dir=$(mktemp -d); export dir
@@ -31,7 +31,7 @@ function download_memes() {
     wget -q -O - "https://reddit.com/r/${1}/top.json?t=day" \
       | jq '.data.children[].data.url' \
       | grep -E '(png|jpg|jpeg)' \
-      | xargs --max-procs 0 wget -nc -q -P "${dir}"
+      | xargs -P 0 wget -nc -q -P "${dir}"
 
     log::info "Finished downloading from /r/${1}"
 
@@ -93,7 +93,7 @@ function main() {
   log::info "Collecting content from these subs [$(printf '%s,' "${subs[@]}")]"
 
   printf '%s\n' "${subs[@]}" \
-    | xargs --max-procs 0 -I "{}" bash -c 'download_memes "{}"'
+    | xargs -P 0 -I "{}" bash -c 'download_memes "{}"'
 
   # Assemble an html file that describes the directory
   build_html
