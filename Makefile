@@ -1,9 +1,9 @@
-CMD := dank
+CMD := target/release/dank
 INSTALL_DIR := /usr/local/bin
 
 .PHONY: build
 build:
-	cargo build
+	cargo build --release
 
 .PHONY: install
 install: build
