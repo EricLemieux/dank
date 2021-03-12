@@ -3,7 +3,7 @@ INSTALL_DIR := /usr/local/bin
 
 .PHONY: build
 build:
-	shellcheck dank
+	cargo build
 
 .PHONY: install
 install: build
