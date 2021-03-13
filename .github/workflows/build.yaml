@@ -15,4 +15,4 @@ jobs:
       - name: run build
         run: make
       - name: run the application
-        run: ./dank
+        run: ./target/release/dank

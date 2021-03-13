@@ -1,9 +1,10 @@
 use structopt::StructOpt;
 use serde::Deserialize;
-use tokio::fs::{File, create_dir};
-use tokio::io::AsyncWriteExt;
+use std::fs::{File, create_dir};
 use std::path::{PathBuf};
 use regex::Regex;
+use rayon::prelude::*;
+use std::io::Write;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -15,25 +16,22 @@ struct Cli {
     directory: PathBuf,
 }
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let args = Cli::from_args();
 
     // Create the output directory if it doesn't exist
     if !args.directory.is_dir() {
-        create_dir(args.directory.to_str().unwrap()).await.unwrap()
+        create_dir(args.directory.to_str().unwrap()).unwrap()
     }
 
-
-    // TODO: Determine how to make this faster, ie run in parallel
-    for sub in args.subs.iter() {
+    args.subs.par_iter().for_each(|sub| {
         println!("Downloading from: {}", sub);
-        let res = get_top_links_from_sub(String::from(sub)).await.unwrap();
+        let res = get_top_links_from_sub(String::from(sub)).unwrap();
 
-        for link in res.iter() {
-            download_image(&String::from(link), &args.directory).await.unwrap();
-        }
-    }
+        res.par_iter().for_each(|link| {
+            download_image(&String::from(link), &args.directory).unwrap();
+        });
+    });
 }
 
 #[derive(Deserialize, Debug)]
@@ -48,13 +46,11 @@ struct Wrapper {
 }
 
 /// Get the links of the top rated images for the day from a single subreddit.
-async fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
+fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let url = format!("https://reddit.com/r/{}/top.json?t=day", sub);
 
-    let res= reqwest::get(url)
-        .await?
-        .json::<Wrapper>()
-        .await?;
+    let res= reqwest::blocking::get(url)?
+        .json::<Wrapper>()?;
 
     // TODO: Filter out posts that we don't care about / are a pain in the ass / are not images
     let link_list = res.data.children.unwrap().iter().map(|child| {
@@ -65,7 +61,7 @@ async fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std:
 }
 
 
-async fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
     let caps = re.captures(image_url).unwrap();
 
@@ -79,13 +75,11 @@ async fn download_image(image_url: &String, download_directory: &PathBuf) -> Res
         return Ok(())
     }
 
-    let res= reqwest::get(image_url)
-        .await?
-        .bytes()
-        .await?;
+    let res= reqwest::blocking::get(image_url)?
+        .bytes()?;
 
-    let mut file = File::create(path.to_str().unwrap()).await?;
-    file.write_all(&*res).await?;
+    let mut file = File::create(path.to_str().unwrap()).unwrap();
+    file.write_all(&*res).unwrap();
 
     return Ok(());
 }
