@@ -25,7 +25,7 @@ fn main() {
     }
 
     args.subs.par_iter().for_each(|sub| {
-        println!("Downloading from: {}", sub);
+        eprintln!("Downloading from: {}", sub);
         let res = get_top_links_from_sub(String::from(sub)).unwrap();
 
         res.par_iter().for_each(|link| {
@@ -56,7 +56,7 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
         .data
         .children
         .unwrap()
-        .iter()
+        .par_iter()
         .map(|child| {
             return &child.data;
         })
@@ -81,10 +81,10 @@ fn download_image(
     let file_name = &caps["file_name"];
     let path = download_directory.join(file_name);
 
-    println!("Url: {:?}, file_name: {:?}", image_url, file_name);
+    eprintln!("Url: {:?}, file_name: {:?}", image_url, file_name);
 
     if path.is_file() {
-        println!("File already exists, not downloading again");
+        eprintln!("File already exists, not downloading again");
         return Ok(());
     }
 
