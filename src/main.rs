@@ -38,6 +38,7 @@ fn main() {
 struct Data {
     children: Option<Vec<Wrapper>>,
     url: Option<String>,
+    is_video: Option<bool>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -49,17 +50,19 @@ struct Wrapper {
 fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let url = format!("https://reddit.com/r/{}/top.json?t=day", sub);
 
-    let res= reqwest::blocking::get(url)?
+    let res = reqwest::blocking::get(url)?
         .json::<Wrapper>()?;
 
-    // TODO: Filter out posts that we don't care about / are a pain in the ass / are not images
     let link_list = res.data.children.unwrap().iter().map(|child| {
-      return child.data.url.as_ref().unwrap().to_string();
+        return &child.data;
+    }).filter(|a| {
+        return !a.is_video.unwrap();
+    }).map(|a| {
+        return a.url.as_ref().unwrap().to_string();
     }).collect();
 
     return Ok(link_list);
 }
-
 
 fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
@@ -72,10 +75,10 @@ fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<()
 
     if path.is_file() {
         println!("File already exists, not downloading again");
-        return Ok(())
+        return Ok(());
     }
 
-    let res= reqwest::blocking::get(image_url)?
+    let res = reqwest::blocking::get(image_url)?
         .bytes()?;
 
     let mut file = File::create(path.to_str().unwrap()).unwrap();
