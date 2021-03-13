@@ -1,10 +1,10 @@
-use structopt::StructOpt;
-use serde::Deserialize;
-use std::fs::{File, create_dir};
-use std::path::{PathBuf};
-use regex::Regex;
 use rayon::prelude::*;
+use regex::Regex;
+use serde::Deserialize;
+use std::fs::{create_dir, File};
 use std::io::Write;
+use std::path::PathBuf;
+use structopt::StructOpt;
 
 #[derive(Debug, StructOpt)]
 struct Cli {
@@ -50,21 +50,31 @@ struct Wrapper {
 fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
     let url = format!("https://reddit.com/r/{}/top.json?t=day", sub);
 
-    let res = reqwest::blocking::get(url)?
-        .json::<Wrapper>()?;
+    let res = reqwest::blocking::get(url)?.json::<Wrapper>()?;
 
-    let link_list = res.data.children.unwrap().iter().map(|child| {
-        return &child.data;
-    }).filter(|a| {
-        return !a.is_video.unwrap();
-    }).map(|a| {
-        return a.url.as_ref().unwrap().to_string();
-    }).collect();
+    let link_list = res
+        .data
+        .children
+        .unwrap()
+        .iter()
+        .map(|child| {
+            return &child.data;
+        })
+        .filter(|a| {
+            return !a.is_video.unwrap();
+        })
+        .map(|a| {
+            return a.url.as_ref().unwrap().to_string();
+        })
+        .collect();
 
     return Ok(link_list);
 }
 
-fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<(), Box<dyn std::error::Error>> {
+fn download_image(
+    image_url: &String,
+    download_directory: &PathBuf,
+) -> Result<(), Box<dyn std::error::Error>> {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
     let caps = re.captures(image_url).unwrap();
 
@@ -78,8 +88,7 @@ fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<()
         return Ok(());
     }
 
-    let res = reqwest::blocking::get(image_url)?
-        .bytes()?;
+    let res = reqwest::blocking::get(image_url)?.bytes()?;
 
     let mut file = File::create(path.to_str().unwrap()).unwrap();
     file.write_all(&*res).unwrap();
