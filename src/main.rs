@@ -39,6 +39,7 @@ struct Data {
     children: Option<Vec<Wrapper>>,
     url: Option<String>,
     is_video: Option<bool>,
+    post_hint: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -61,7 +62,7 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
             return &child.data;
         })
         .filter(|a| {
-            return !a.is_video.unwrap();
+            return !a.is_video.unwrap() && a.post_hint.as_ref().unwrap() == "image";
         })
         .map(|a| {
             return a.url.as_ref().unwrap().to_string();
