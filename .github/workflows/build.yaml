@@ -9,10 +9,7 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
-      - name: Setup shellcheck on MacOs
-        if: ${{ matrix.platform == 'macos-latest' }}
-        run: brew install shellcheck
       - name: run build
         run: make
       - name: run the application
-        run: ./dank
+        run: ./target/release/dank
