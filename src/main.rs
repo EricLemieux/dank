@@ -1,6 +1,8 @@
+use handlebars::Handlebars;
 use rayon::prelude::*;
 use regex::Regex;
 use serde::Deserialize;
+use std::collections::HashMap;
 use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
@@ -17,21 +19,41 @@ struct Cli {
 }
 
 fn main() {
-    let args = Cli::from_args();
+    let args: Cli = Cli::from_args();
 
     // Create the output directory if it doesn't exist
     if !args.directory.is_dir() {
         create_dir(args.directory.to_str().unwrap()).unwrap()
     }
 
-    args.subs.par_iter().for_each(|sub| {
-        eprintln!("Downloading from: {}", sub);
-        let res = get_top_links_from_sub(String::from(sub)).unwrap();
+    let images: Vec<String> = args
+        .subs
+        .par_iter()
+        .map(|sub| {
+            eprintln!("Downloading from: {}", sub);
+            let res = get_top_links_from_sub(String::from(sub)).unwrap();
 
-        res.par_iter().for_each(|link| {
-            download_image(&String::from(link), &args.directory).unwrap();
-        });
-    });
+            let sub_images: Vec<String> = res
+                .par_iter()
+                .map(|link| {
+                    return download_image(&String::from(link), &args.directory).unwrap();
+                })
+                .collect();
+
+            return sub_images;
+        })
+        .reduce(
+            || vec![],
+            |a: Vec<String>, b: Vec<String>| {
+                return a.into_iter().chain(b.into_iter()).collect();
+            },
+        );
+
+    let html = generate_html(images);
+
+    let html_path = args.directory.join("index.html");
+    let mut html_file = File::create(html_path.to_str().unwrap()).unwrap();
+    html_file.write_all(html.as_ref()).unwrap();
 }
 
 #[derive(Deserialize, Debug)]
@@ -75,7 +97,7 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
 fn download_image(
     image_url: &String,
     download_directory: &PathBuf,
-) -> Result<(), Box<dyn std::error::Error>> {
+) -> Result<String, Box<dyn std::error::Error>> {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
     let caps = re.captures(image_url).unwrap();
 
@@ -86,7 +108,7 @@ fn download_image(
 
     if path.is_file() {
         eprintln!("File already exists, not downloading again");
-        return Ok(());
+        return Ok(extract_file_name(path));
     }
 
     let res = reqwest::blocking::get(image_url)?.bytes()?;
@@ -94,5 +116,28 @@ fn download_image(
     let mut file = File::create(path.to_str().unwrap()).unwrap();
     file.write_all(&*res).unwrap();
 
-    return Ok(());
+    return Ok(extract_file_name(path));
+}
+
+fn extract_file_name(path: PathBuf) -> String {
+    return path
+        .file_name()
+        .unwrap()
+        .to_os_string()
+        .into_string()
+        .unwrap();
+}
+
+fn generate_html(images: Vec<String>) -> String {
+    let mut handlebars = Handlebars::new();
+    handlebars
+        .register_template_string("html", include_str!("templates/index.hbs"))
+        .unwrap();
+
+    let mut template_data = HashMap::new();
+    template_data.insert("images", images);
+
+    let html = handlebars.render("html", &template_data).unwrap();
+
+    return html;
 }
