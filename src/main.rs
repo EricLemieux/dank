@@ -84,7 +84,9 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
             return &child.data;
         })
         .filter(|a| {
-            return !a.is_video.unwrap() && a.post_hint.as_ref().unwrap() == "image";
+            return !a.is_video.unwrap()
+                && a.post_hint.is_some()
+                && a.post_hint.as_ref().unwrap() == "image";
         })
         .map(|a| {
             return a.url.as_ref().unwrap().to_string();
