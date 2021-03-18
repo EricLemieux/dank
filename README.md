@@ -36,9 +36,3 @@ Specify the subs that you want to download images from. This should be specified
 ```shell
 dank --subs foo,bar,baz
 ```
-
-Download memes and start a simple web server, so you can access from your web browser.
-
-```shell
-dank --serve
-```
