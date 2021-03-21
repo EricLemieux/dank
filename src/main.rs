@@ -36,8 +36,13 @@ fn main() {
             let sub_images: Vec<String> = res
                 .par_iter()
                 .map(|link| {
-                    return download_image(&String::from(link), &args.directory).unwrap();
+                    return match download_image(&String::from(link), &args.directory) {
+                        Ok(a) => Some(a),
+                        Err(_) => None,
+                    };
                 })
+                .filter(|value| value.is_some())
+                .map(|value| value.unwrap())
                 .collect();
 
             return sub_images;
@@ -96,32 +101,61 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
     return Ok(link_list);
 }
 
+/// Download an image from the provided url into the provided directory.
 fn download_image(
     image_url: &String,
     download_directory: &PathBuf,
-) -> Result<String, Box<dyn std::error::Error>> {
+) -> Result<String, String> {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
     let caps = re.captures(image_url).unwrap();
 
     let file_name = &caps["file_name"];
     let path = download_directory.join(file_name);
 
-    eprintln!("Url: {:?}, file_name: {:?}", image_url, file_name);
-
     if path.is_file() {
-        eprintln!("File already exists, not downloading again");
+        eprintln!(
+            "Url: {:?}, file_name: {:?}, File already exists, not downloading again",
+            image_url, file_name
+        );
         return Ok(extract_file_name(path));
     }
+    eprintln!("Url: {:?}, file_name: {:?}", image_url, file_name);
 
-    let res = reqwest::blocking::get(image_url)?.bytes()?;
+    let res = match reqwest::blocking::get(image_url) {
+        Ok(data) => {
+            match data.bytes() {
+                Ok(bytes) => Ok(bytes),
+                Err(e) => Err(e)
+            }
+        },
+        Err(e) => {
+            eprintln!("Unable to download image due to the error: {:?}", e);
+            Err(e)
+        }
+    };
 
-    let mut file = File::create(path.to_str().unwrap()).unwrap();
-    file.write_all(&*res).unwrap();
+    return match res {
+        Ok(data) => {
+            let mut file = File::create(path.to_str().unwrap()).unwrap();
+            file.write_all(&*data).unwrap();
 
-    return Ok(extract_file_name(path));
+            Ok(extract_file_name(path))
+        }
+        Err(e) => Err(e.to_string()),
+    };
+
+
 }
 
-fn extract_file_name(path: PathBuf) -> String {
+/// Extract the file name from a path buffer.
+///
+/// # Examples
+///
+/// ```
+/// let result = dank::extract_file_name(PathBuf::from("/some/dir/foo.jpg"));
+/// assert_eq!(result, "foo.jpg");
+/// ```
+pub fn extract_file_name(path: PathBuf) -> String {
     return path
         .file_name()
         .unwrap()
@@ -130,6 +164,7 @@ fn extract_file_name(path: PathBuf) -> String {
         .unwrap();
 }
 
+/// Generate an html page that contains all of the downloaded images.
 fn generate_html(images: Vec<String>) -> String {
     let mut handlebars = Handlebars::new();
     handlebars
