@@ -102,10 +102,7 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
 }
 
 /// Download an image from the provided url into the provided directory.
-fn download_image(
-    image_url: &String,
-    download_directory: &PathBuf,
-) -> Result<String, String> {
+fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<String, String> {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
     let caps = re.captures(image_url).unwrap();
 
@@ -122,29 +119,27 @@ fn download_image(
     eprintln!("Url: {:?}, file_name: {:?}", image_url, file_name);
 
     let res = match reqwest::blocking::get(image_url) {
-        Ok(data) => {
-            match data.bytes() {
-                Ok(bytes) => Ok(bytes),
-                Err(e) => Err(e)
+        Ok(data) => match data.bytes() {
+            Ok(bytes) => bytes,
+            Err(e) => {
+                return Err(format!(
+                    "Unable to extract bytes from {} due to error {}",
+                    image_url, e
+                ))
             }
         },
         Err(e) => {
-            eprintln!("Unable to download image due to the error: {:?}", e);
-            Err(e)
+            return Err(format!(
+                "Unable to download image due to the error: {:?}",
+                e
+            ))
         }
     };
 
-    return match res {
-        Ok(data) => {
-            let mut file = File::create(path.to_str().unwrap()).unwrap();
-            file.write_all(&*data).unwrap();
+    let mut file = File::create(path.to_str().unwrap()).unwrap();
+    file.write_all(&*res).unwrap();
 
-            Ok(extract_file_name(path))
-        }
-        Err(e) => Err(e.to_string()),
-    };
-
-
+    return Ok(extract_file_name(path));
 }
 
 /// Extract the file name from a path buffer.
