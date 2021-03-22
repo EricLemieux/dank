@@ -36,7 +36,7 @@ fn main() {
             let sub_images: Vec<String> = res
                 .par_iter()
                 .map(|link| {
-                    return match download_image(&String::from(link), &args.directory) {
+                    return match download_image(&link, &args.directory) {
                         Ok(a) => Some(a),
                         Err(_) => None,
                     };
@@ -102,19 +102,16 @@ fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error
 }
 
 /// Download an image from the provided url into the provided directory.
-fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<String, String> {
-    let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
-    let caps = re.captures(image_url).unwrap();
-
-    let file_name = &caps["file_name"];
-    let path = download_directory.join(file_name);
+fn download_image(image_url: &str, download_directory: &PathBuf) -> Result<String, String> {
+    let file_name = extract_file_name_from_url(image_url);
+    let path = download_directory.join(&file_name);
 
     if path.is_file() {
         eprintln!(
             "Url: {:?}, file_name: {:?}, File already exists, not downloading again",
             image_url, file_name
         );
-        return Ok(extract_file_name(path));
+        return Ok(String::from(file_name));
     }
     eprintln!("Url: {:?}, file_name: {:?}", image_url, file_name);
 
@@ -139,24 +136,22 @@ fn download_image(image_url: &String, download_directory: &PathBuf) -> Result<St
     let mut file = File::create(path.to_str().unwrap()).unwrap();
     file.write_all(&*res).unwrap();
 
-    return Ok(extract_file_name(path));
+    return Ok(String::from(file_name));
 }
 
-/// Extract the file name from a path buffer.
+/// Extract a file's name from it's URL.
 ///
 /// # Examples
 ///
 /// ```
-/// let result = dank::extract_file_name(PathBuf::from("/some/dir/foo.jpg"));
-/// assert_eq!(result, "foo.jpg");
+/// let result = extract_file_name_from_url("example.com/foo/bar/baz/example.jpg");
+/// assert_eq!(result, "example.jpg");
 /// ```
-pub fn extract_file_name(path: PathBuf) -> String {
-    return path
-        .file_name()
-        .unwrap()
-        .to_os_string()
-        .into_string()
-        .unwrap();
+fn extract_file_name_from_url(image_url: &str) -> String {
+    let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
+    let caps = re.captures(image_url).unwrap();
+
+    return String::from(&caps["file_name"]);
 }
 
 /// Generate an html page that contains all of the downloaded images.
@@ -172,4 +167,15 @@ fn generate_html(images: Vec<String>) -> String {
     let html = handlebars.render("html", &template_data).unwrap();
 
     return html;
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn extract_file_name_from_url_ok() {
+        let result = extract_file_name_from_url("example.com/foo/bar/baz/example.jpg");
+        assert_eq!(result, "example.jpg");
+    }
 }
