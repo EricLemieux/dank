@@ -31,7 +31,17 @@ fn main() {
         .par_iter()
         .map(|sub| {
             eprintln!("Downloading from: {}", sub);
-            let res = get_top_links_from_sub(String::from(sub)).unwrap();
+            let res = match get_top_links_from_sub(String::from(sub)) {
+                Ok(a) => a,
+                Err(e) => {
+                    eprintln!(
+                        "Unable to get the top links from the sub {:?}, {:?}",
+                        sub, e
+                    );
+
+                    Vec::new()
+                }
+            };
 
             let sub_images: Vec<String> = res
                 .par_iter()
