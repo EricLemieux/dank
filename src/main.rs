@@ -38,7 +38,7 @@ fn main() {
         .par_iter()
         .map(|sub| {
             eprintln!("Downloading from: {}", sub);
-            let res = match api.get_top_posts_from_sub(&String::from(sub)) {
+            let res = match api.get_top_posts_from_sub(&sub) {
                 Ok(a) => a,
                 Err(e) => {
                     eprintln!(
@@ -52,10 +52,12 @@ fn main() {
 
             let sub_images: Vec<String> = res
                 .par_iter()
-                .map(|link| match download_image(&link, &args.directory.clone()) {
-                    Ok(a) => Some(a),
-                    Err(_) => None,
-                })
+                .map(
+                    |link| match download_image(&link, &args.directory.clone()) {
+                        Ok(a) => Some(a),
+                        Err(_) => None,
+                    },
+                )
                 .filter(|value| value.is_some())
                 .map(|value| value.unwrap())
                 .collect();

@@ -1,8 +1,8 @@
 use rayon::prelude::*;
 use serde::Deserialize;
-use std::str::FromStr;
-use std::fmt::{Display};
 use std::fmt;
+use std::fmt::Display;
+use std::str::FromStr;
 
 #[derive(Deserialize, Debug)]
 pub struct Data {
@@ -56,7 +56,7 @@ pub struct Api {
 
 impl Api {
     /// Get the top image links for a single subreddit.
-    pub fn get_top_posts_from_sub(&self, sub: &String) -> Result<Vec<String>, String> {
+    pub fn get_top_posts_from_sub(&self, sub: &str) -> Result<Vec<String>, String> {
         let url = format!(
             "https://reddit.com/r/{}/top.json?t={}",
             sub,
