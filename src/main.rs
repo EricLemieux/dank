@@ -9,7 +9,7 @@ use structopt::StructOpt;
 
 mod reddit;
 
-#[derive(Debug, StructOpt)]
+#[derive(Debug, StructOpt, Clone)]
 struct Cli {
     /// Subreddits to download images from
     #[structopt(long, default_value = "memes", required = false, use_delimiter = true)]
@@ -17,6 +17,8 @@ struct Cli {
     /// Directory to download images into
     #[structopt(parse(from_os_str), default_value = "/tmp/dank", required = false)]
     directory: PathBuf,
+    #[structopt(default_value = "day", required = false)]
+    timeframe: reddit::Timeframe,
 }
 
 fn main() {
@@ -27,7 +29,9 @@ fn main() {
         create_dir(args.directory.to_str().unwrap()).unwrap()
     }
 
-    let api = reddit::Api {};
+    let api = reddit::Api {
+        timeframe: args.clone().timeframe,
+    };
 
     let images: Vec<String> = args
         .subs
@@ -48,7 +52,7 @@ fn main() {
 
             let sub_images: Vec<String> = res
                 .par_iter()
-                .map(|link| match download_image(&link, &args.directory) {
+                .map(|link| match download_image(&link, &args.directory.clone()) {
                     Ok(a) => Some(a),
                     Err(_) => None,
                 })

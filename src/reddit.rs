@@ -1,5 +1,8 @@
 use rayon::prelude::*;
 use serde::Deserialize;
+use std::str::FromStr;
+use std::fmt::{Display};
+use std::fmt;
 
 #[derive(Deserialize, Debug)]
 pub struct Data {
@@ -14,13 +17,51 @@ pub struct Wrapper {
     pub data: Data,
 }
 
-// TODO: Should be able to define time frame, and minimum point threshold.
-pub struct Api {}
+#[derive(Deserialize, Debug, Clone, PartialEq)]
+pub enum Timeframe {
+    Day,
+    Week,
+    Month,
+    All,
+}
+
+impl Display for Timeframe {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Timeframe::Day => write!(f, "day"),
+            Timeframe::Week => write!(f, "week"),
+            Timeframe::Month => write!(f, "month"),
+            Timeframe::All => write!(f, "all"),
+        }
+    }
+}
+
+impl FromStr for Timeframe {
+    type Err = String;
+
+    fn from_str(day: &str) -> Result<Self, Self::Err> {
+        match day {
+            "day" => Ok(Timeframe::Day),
+            "week" => Ok(Timeframe::Week),
+            "month" => Ok(Timeframe::Month),
+            "all" => Ok(Timeframe::All),
+            _ => Err("Not found".parse().unwrap()),
+        }
+    }
+}
+
+pub struct Api {
+    pub(crate) timeframe: Timeframe,
+}
 
 impl Api {
-    /// Get the daily top image links for a single subreddit.
+    /// Get the top image links for a single subreddit.
     pub fn get_top_posts_from_sub(&self, sub: &String) -> Result<Vec<String>, String> {
-        let url = format!("https://reddit.com/r/{}/top.json?t=day", sub);
+        let url = format!(
+            "https://reddit.com/r/{}/top.json?t={}",
+            sub,
+            self.timeframe.to_string()
+        );
 
         let res = match reqwest::blocking::get(url) {
             Ok(a) => a,
@@ -54,4 +95,20 @@ impl Api {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn timeframe_to_string() {
+        assert_eq!("day", Timeframe::Day.to_string());
+        assert_eq!("week", Timeframe::Week.to_string());
+        assert_eq!("month", Timeframe::Month.to_string());
+        assert_eq!("all", Timeframe::All.to_string());
+    }
+
+    #[test]
+    fn timeframe_from_string() {
+        assert_eq!(Timeframe::Day, Timeframe::from_str("day").unwrap());
+        assert_eq!(Timeframe::Week, Timeframe::from_str("week").unwrap());
+        assert_eq!(Timeframe::Month, Timeframe::from_str("month").unwrap());
+        assert_eq!(Timeframe::All, Timeframe::from_str("all").unwrap());
+    }
 }
