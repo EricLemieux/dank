@@ -1,14 +1,15 @@
 use handlebars::Handlebars;
 use rayon::prelude::*;
 use regex::Regex;
-use serde::Deserialize;
 use std::collections::HashMap;
 use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
-#[derive(Debug, StructOpt)]
+mod reddit;
+
+#[derive(Debug, StructOpt, Clone)]
 struct Cli {
     /// Subreddits to download images from
     #[structopt(long, default_value = "memes", required = false, use_delimiter = true)]
@@ -16,6 +17,8 @@ struct Cli {
     /// Directory to download images into
     #[structopt(parse(from_os_str), default_value = "/tmp/dank", required = false)]
     directory: PathBuf,
+    #[structopt(default_value = "day", required = false)]
+    timeframe: reddit::Timeframe,
 }
 
 fn main() {
@@ -26,12 +29,16 @@ fn main() {
         create_dir(args.directory.to_str().unwrap()).unwrap()
     }
 
+    let api = reddit::Api {
+        timeframe: args.clone().timeframe,
+    };
+
     let images: Vec<String> = args
         .subs
         .par_iter()
         .map(|sub| {
             eprintln!("Downloading from: {}", sub);
-            let res = match get_top_links_from_sub(String::from(sub)) {
+            let res = match api.get_top_posts_from_sub(&sub) {
                 Ok(a) => a,
                 Err(e) => {
                     eprintln!(
@@ -45,10 +52,12 @@ fn main() {
 
             let sub_images: Vec<String> = res
                 .par_iter()
-                .map(|link| match download_image(&link, &args.directory) {
-                    Ok(a) => Some(a),
-                    Err(_) => None,
-                })
+                .map(
+                    |link| match download_image(&link, &args.directory.clone()) {
+                        Ok(a) => Some(a),
+                        Err(_) => None,
+                    },
+                )
                 .filter(|value| value.is_some())
                 .map(|value| value.unwrap())
                 .collect();
@@ -64,44 +73,6 @@ fn main() {
     let html_path = args.directory.join("index.html");
     let mut html_file = File::create(html_path.to_str().unwrap()).unwrap();
     html_file.write_all(html.as_ref()).unwrap();
-}
-
-#[derive(Deserialize, Debug)]
-struct Data {
-    children: Option<Vec<Wrapper>>,
-    url: Option<String>,
-    is_video: Option<bool>,
-    post_hint: Option<String>,
-}
-
-#[derive(Deserialize, Debug)]
-struct Wrapper {
-    data: Data,
-}
-
-/// Get the links of the top rated images for the day from a single subreddit.
-fn get_top_links_from_sub(sub: String) -> Result<Vec<String>, Box<dyn std::error::Error>> {
-    let url = format!("https://reddit.com/r/{}/top.json?t=day", sub);
-
-    let res = reqwest::blocking::get(url)?.json::<Wrapper>()?;
-
-    let link_list = res
-        .data
-        .children
-        .unwrap()
-        .par_iter()
-        .map(|child| &child.data)
-        .filter(|a| {
-            return !a.is_video.unwrap()
-                && a.post_hint.is_some()
-                && a.post_hint.as_ref().unwrap() == "image";
-        })
-        .map(|a| {
-            return a.url.as_ref().unwrap().to_string();
-        })
-        .collect();
-
-    Ok(link_list)
 }
 
 /// Download an image from the provided url into the provided directory.
@@ -125,14 +96,14 @@ fn download_image(image_url: &str, download_directory: &PathBuf) -> Result<Strin
                 return Err(format!(
                     "Unable to extract bytes from {} due to error {}",
                     image_url, e
-                ))
+                ));
             }
         },
         Err(e) => {
             return Err(format!(
                 "Unable to download image due to the error: {:?}",
                 e
-            ))
+            ));
         }
     };
 
