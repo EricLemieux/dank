@@ -1,3 +1,5 @@
+//! Reddit API
+
 use rayon::prelude::*;
 use serde::Deserialize;
 use std::fmt;
@@ -51,7 +53,7 @@ impl FromStr for Timeframe {
 }
 
 pub struct Api {
-    pub(crate) timeframe: Timeframe,
+    pub timeframe: Timeframe,
 }
 
 impl Api {
