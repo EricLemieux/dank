@@ -1,12 +1,6 @@
-use handlebars::Handlebars;
-use rayon::prelude::*;
-use regex::Regex;
-use std::collections::HashMap;
-use std::fs::{create_dir, File};
-use std::io::Write;
+use dank;
 use std::path::PathBuf;
 use structopt::StructOpt;
-use dank;
 
 mod reddit;
 
@@ -19,7 +13,7 @@ struct Cli {
     #[structopt(parse(from_os_str), default_value = "/tmp/dank", required = false)]
     directory: PathBuf,
     #[structopt(default_value = "day", required = false)]
-    timeframe: reddit::Timeframe,
+    timeframe: dank::reddit::Timeframe,
 }
 
 fn main() {
@@ -31,5 +25,10 @@ fn main() {
         timeframe: args.timeframe.clone(),
     };
 
-    dank::download_memes(options)?
+    match dank::download_memes(options) {
+        Ok(_) => {}
+        Err(e) => {
+            eprintln!("{}", e)
+        }
+    }
 }

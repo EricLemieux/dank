@@ -1,21 +1,19 @@
 //! Download memes from reddit in parallel so that you can more efficiently waste time.
 
-use crate::reddit::Timeframe::{Week, Day};
-use std::path::PathBuf;
 use handlebars::Handlebars;
 use rayon::prelude::*;
 use regex::Regex;
 use std::collections::HashMap;
 use std::fs::{create_dir, File};
 use std::io::Write;
-use structopt::StructOpt;
+use std::path::PathBuf;
 
 pub mod reddit;
 
 pub struct Options {
     pub subs: Vec<String>,
     pub directory: PathBuf,
-    pub timeframe: reddit::Timeframe
+    pub timeframe: reddit::Timeframe,
 }
 
 /// Download images from reddit
@@ -26,7 +24,7 @@ pub fn download_memes(options: Options) -> Result<(), String> {
     }
 
     let api = reddit::Api {
-        timeframe: options.timeframe
+        timeframe: options.timeframe.clone(),
     };
 
     let images: Vec<String> = options
