@@ -10,13 +10,18 @@ use std::path::PathBuf;
 
 pub mod reddit;
 
+/// Options for what the user would like to download, such as the subreddits, and where those files
+/// should download to.
 pub struct Options {
+    /// Subreddits that the top posts should be downloaded from.
     pub subs: Vec<String>,
+    /// Where on the file system the images should be downloaded to.
     pub directory: PathBuf,
+    /// The search timeframe in which top rated posts are being calculated.
     pub timeframe: reddit::Timeframe,
 }
 
-/// Download images from reddit
+/// Download memes from reddit
 pub fn download_memes(options: Options) -> Result<(), String> {
     // Create the output directory if it doesn't exist
     if !options.directory.is_dir() {
@@ -114,10 +119,10 @@ fn download_image(image_url: &str, download_directory: &PathBuf) -> Result<Strin
 /// # Examples
 ///
 /// ```
-/// let result = extract_file_name_from_url("example.com/foo/bar/baz/example.jpg");
+/// let result = dank::extract_file_name_from_url("example.com/foo/bar/baz/example.jpg");
 /// assert_eq!(result, "example.jpg");
 /// ```
-fn extract_file_name_from_url(image_url: &str) -> String {
+pub fn extract_file_name_from_url(image_url: &str) -> String {
     let re = Regex::new(r"^.*/(?P<file_name>[^/]*)$").unwrap();
     let caps = re.captures(image_url).unwrap();
 

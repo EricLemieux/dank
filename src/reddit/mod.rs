@@ -1,10 +1,17 @@
-//! Reddit API
+//! Reddit API wrapper that makes it easier to grab and utilize data returned by the API.
 
 use rayon::prelude::*;
 use serde::Deserialize;
 use std::fmt;
 use std::fmt::Display;
 use std::str::FromStr;
+
+/// Wrapper element that is both the top level object returned by the reddit api as well as the
+/// wrapping element for each child element (posts) returned in the data.
+#[derive(Deserialize, Debug)]
+pub struct Wrapper {
+    pub data: Data,
+}
 
 #[derive(Deserialize, Debug)]
 pub struct Data {
@@ -14,25 +21,28 @@ pub struct Data {
     pub post_hint: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Wrapper {
-    pub data: Data,
-}
-
+/// Different timeframes which you can use to sort top rated posts.
+/// Used in a rolling window, so they are the top rated posts from now minus the timeframe given.
+/// As an example the top posts for [Timeframe::Day], are the top posts within the past 24 hours,
+/// rather than a specific day.
 #[derive(Deserialize, Debug, Clone, PartialEq)]
 pub enum Timeframe {
+    Hour,
     Day,
     Week,
     Month,
+    Year,
     All,
 }
 
 impl Display for Timeframe {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
+            Timeframe::Hour => write!(f, "hour"),
             Timeframe::Day => write!(f, "day"),
             Timeframe::Week => write!(f, "week"),
             Timeframe::Month => write!(f, "month"),
+            Timeframe::Year => write!(f, "year"),
             Timeframe::All => write!(f, "all"),
         }
     }
@@ -43,15 +53,18 @@ impl FromStr for Timeframe {
 
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
+            "hour" => Ok(Timeframe::Hour),
             "day" => Ok(Timeframe::Day),
             "week" => Ok(Timeframe::Week),
             "month" => Ok(Timeframe::Month),
+            "year" => Ok(Timeframe::Year),
             "all" => Ok(Timeframe::All),
             _ => Err("Not found".parse().unwrap()),
         }
     }
 }
 
+/// API implementation object, this is the main entrypoint for using the api.
 pub struct Api {
     pub timeframe: Timeframe,
 }
