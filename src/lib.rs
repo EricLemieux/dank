@@ -28,9 +28,7 @@ pub fn download_memes(options: Options) -> Result<(), String> {
         create_dir(options.directory.to_str().unwrap()).unwrap()
     }
 
-    let api = reddit::Api {
-        timeframe: options.timeframe.clone(),
-    };
+    let api = reddit::Api::new(options.timeframe.clone());
 
     let images: Vec<String> = options
         .subs

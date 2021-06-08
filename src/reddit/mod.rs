@@ -70,6 +70,11 @@ pub struct Api {
 }
 
 impl Api {
+    /// Construct an API instance with all required fields.
+    pub fn new(timeframe: Timeframe) -> Api {
+        Api { timeframe }
+    }
+
     /// Get the top image links for a single subreddit.
     pub fn get_top_posts_from_sub(&self, sub: &str) -> Result<Vec<String>, String> {
         let url = format!(
