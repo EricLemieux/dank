@@ -1,4 +1,3 @@
-use dank;
 use std::path::PathBuf;
 use structopt::StructOpt;
 
@@ -22,7 +21,7 @@ fn main() {
     let options = dank::Options {
         subs: args.subs.clone(),
         directory: args.directory.clone(),
-        timeframe: args.timeframe.clone(),
+        timeframe: args.timeframe,
     };
 
     match dank::download_memes(options) {

@@ -1,13 +1,12 @@
 //! Download memes from reddit in parallel so that you can more efficiently waste time.
 
-use handlebars::Handlebars;
 use rayon::prelude::*;
 use regex::Regex;
-use std::collections::HashMap;
 use std::fs::{create_dir, File};
 use std::io::Write;
 use std::path::PathBuf;
 
+pub mod html;
 pub mod reddit;
 
 /// Options for what the user would like to download, such as the subreddits, and where those files
@@ -65,11 +64,11 @@ pub fn download_memes(options: Options) -> Result<(), String> {
             a.into_iter().chain(b.into_iter()).collect()
         });
 
-    let html = generate_html(images);
+    let webpage = html::generate_html(images);
 
     let html_path = options.directory.join("index.html");
     let mut html_file = File::create(html_path.to_str().unwrap()).unwrap();
-    html_file.write_all(html.as_ref()).unwrap();
+    html_file.write_all(webpage.as_ref()).unwrap();
 
     Ok(())
 }
@@ -125,19 +124,6 @@ pub fn extract_file_name_from_url(image_url: &str) -> String {
     let caps = re.captures(image_url).unwrap();
 
     String::from(&caps["file_name"])
-}
-
-/// Generate an html page that contains all of the downloaded images.
-fn generate_html(images: Vec<String>) -> String {
-    let mut handlebars = Handlebars::new();
-    handlebars
-        .register_template_string("html", include_str!("templates/index.hbs"))
-        .unwrap();
-
-    let mut template_data = HashMap::new();
-    template_data.insert("images", images);
-
-    handlebars.render("html", &template_data).unwrap()
 }
 
 #[cfg(test)]

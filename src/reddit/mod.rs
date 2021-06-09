@@ -36,6 +36,13 @@ pub enum Timeframe {
 }
 
 impl Display for Timeframe {
+    /// Convert a [Timeframe] value into the string representation that the Reddit API understands.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// assert_eq!("hour", dank::reddit::Timeframe::Hour.to_string());
+    /// ```
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Timeframe::Hour => write!(f, "hour"),
@@ -51,6 +58,12 @@ impl Display for Timeframe {
 impl FromStr for Timeframe {
     type Err = String;
 
+    /// Create a [Timeframe] from a String
+    ///
+    /// # Examples
+    /// ```
+    /// assert_eq!(dank::reddit::Timeframe::Hour, "hour".parse().unwrap());
+    /// ```
     fn from_str(day: &str) -> Result<Self, Self::Err> {
         match day {
             "hour" => Ok(Timeframe::Hour),
@@ -71,6 +84,13 @@ pub struct Api {
 
 impl Api {
     /// Construct an API instance with all required fields.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let api = dank::reddit::Api::new(dank::reddit::Timeframe::All);
+    /// assert_eq!("all", api.timeframe.to_string())
+    /// ```
     pub fn new(timeframe: Timeframe) -> Api {
         Api { timeframe }
     }
@@ -117,18 +137,28 @@ mod tests {
     use super::*;
 
     #[test]
+    fn create_api() {
+        let api = Api::new(Timeframe::Day);
+        assert_eq!(Timeframe::Day, api.timeframe);
+    }
+
+    #[test]
     fn timeframe_to_string() {
+        assert_eq!("hour", Timeframe::Hour.to_string());
         assert_eq!("day", Timeframe::Day.to_string());
         assert_eq!("week", Timeframe::Week.to_string());
         assert_eq!("month", Timeframe::Month.to_string());
+        assert_eq!("year", Timeframe::Year.to_string());
         assert_eq!("all", Timeframe::All.to_string());
     }
 
     #[test]
     fn timeframe_from_string() {
-        assert_eq!(Timeframe::Day, Timeframe::from_str("day").unwrap());
-        assert_eq!(Timeframe::Week, Timeframe::from_str("week").unwrap());
-        assert_eq!(Timeframe::Month, Timeframe::from_str("month").unwrap());
-        assert_eq!(Timeframe::All, Timeframe::from_str("all").unwrap());
+        assert_eq!(Timeframe::Hour, "hour".parse().unwrap());
+        assert_eq!(Timeframe::Day, "day".parse().unwrap());
+        assert_eq!(Timeframe::Week, "week".parse().unwrap());
+        assert_eq!(Timeframe::Month, "month".parse().unwrap());
+        assert_eq!(Timeframe::Year, "year".parse().unwrap());
+        assert_eq!(Timeframe::All, "all".parse().unwrap());
     }
 }
