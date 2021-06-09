@@ -21,12 +21,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
       - name: Build
-        run: cargo build --release --target ${{ matrix.target }}
+        run: cargo build --release --target ${{ matrix.platform.target }}
       - name: Package
         run: |
-          cd target/${{ matrix.target }}/release
+          cd target/${{ matrix.platform.target }}/release
 
-          RELEASE_NAME=dank-${{ matrix.platform }}
+          RELEASE_NAME=dank-${{ matrix.platform.platform }}
           RELEASE_TAR=$RELEASE_NAME.tar.gz
           RELEASE_TAR_SUM=$RELEASE_NAME.sha256
 
@@ -36,7 +36,7 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/${{ matrix.target }}/release/spotify-tui-${{ matrix.platform }}.tar.gz
-            target/${{ matrix.target }}/release/spotify-tui-${{ matrix.platform }}.sha256
+            target/${{ matrix.platform.target }}/release/spotify-tui-${{ matrix.platform.platform }}.tar.gz
+            target/${{ matrix.platform.target }}/release/spotify-tui-${{ matrix.platform.platform }}.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
