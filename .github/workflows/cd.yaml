@@ -26,13 +26,13 @@ jobs:
         run: |
           cd target/${{ matrix.platform.target }}/release
 
-          tar czcf dank-${{ matrix.platform.platform }}.tar.gz dank
+          tar czvf dank-${{ matrix.platform.platform }}.tar.gz dank
           shasum -a 256 dank-${{ matrix.platform.platform }}.tar.gz > dank-${{ matrix.platform.platform }}.sha256
       - name: Publish assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/${{ matrix.platform.target }}/release/spotify-tui-${{ matrix.platform.platform }}.tar.gz
-            target/${{ matrix.platform.target }}/release/spotify-tui-${{ matrix.platform.platform }}.sha256
+            target/${{ matrix.platform.target }}/release/dank-${{ matrix.platform.platform }}.tar.gz
+            target/${{ matrix.platform.target }}/release/dank-${{ matrix.platform.platform }}.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
