@@ -26,12 +26,8 @@ jobs:
         run: |
           cd target/${{ matrix.platform.target }}/release
 
-          RELEASE_NAME=dank-${{ matrix.platform.platform }}
-          RELEASE_TAR=$RELEASE_NAME.tar.gz
-          RELEASE_TAR_SUM=$RELEASE_NAME.sha256
-
-          tar czcf $RELEASE_TAR dank
-          shasum -a 256 $RELEASE_TAR > $RELEASE_TAR_SUM
+          tar czcf dank-${{ matrix.platform.platform }}.tar.gz dank
+          shasum -a 256 dank-${{ matrix.platform.platform }}.tar.gz > dank-${{ matrix.platform.platform }}.sha256
       - name: Publish assets
         uses: softprops/action-gh-release@v1
         with:
