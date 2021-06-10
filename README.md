@@ -11,6 +11,15 @@ the binary yourself locally.
 make && sudo make install
 ```
 
+### Arch Linux
+
+Dank is available from the [AUR as a pre-compiled binary](https://aur.archlinux.org/packages/dank-bin/). It can be
+installed manually or by using an AUR helper of your choice. As an example this is the installation process using `yay`.
+
+```shell
+yay -S dank-bin
+```
+
 ### MacOS
 
 I have set up a specialized homebrew tap that can be used to install if you don't want to go through the manual
