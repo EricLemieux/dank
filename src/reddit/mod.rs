@@ -80,6 +80,7 @@ impl FromStr for Timeframe {
 /// API implementation object, this is the main entrypoint for using the api.
 pub struct Api {
     pub timeframe: Timeframe,
+    http_client: reqwest::blocking::Client,
 }
 
 impl Api {
@@ -92,7 +93,10 @@ impl Api {
     /// assert_eq!("all", api.timeframe.to_string())
     /// ```
     pub fn new(timeframe: Timeframe) -> Api {
-        Api { timeframe }
+        Api {
+            timeframe,
+            http_client: reqwest::blocking::Client::builder().build().unwrap(),
+        }
     }
 
     /// Get the top image links for a single subreddit.
@@ -103,10 +107,23 @@ impl Api {
             self.timeframe.to_string()
         );
 
-        let res = match reqwest::blocking::get(url) {
+        let res = match self
+            .http_client
+            .get(url)
+            .header(reqwest::header::USER_AGENT, "dank 2.2.1")
+            .send()
+        {
             Ok(a) => a,
             Err(e) => return Err(e.to_string()),
         };
+
+        if !res.status().is_success() {
+            return Err(format!(
+                "Error retrieving from the reddit API, status code {}",
+                res.status()
+            ));
+        }
+
         let data = match res.json::<Wrapper>() {
             Ok(a) => a,
             Err(e) => return Err(e.to_string()),
