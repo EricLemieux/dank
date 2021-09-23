@@ -20,19 +20,21 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v2
+      - name: Get the tag name
+        run: echo ::set-output name=VERSION::${GITHUB_REF/refs\/tags\//}
       - name: Build
         run: cargo build --release --target ${{ matrix.platform.target }}
       - name: Package
         run: |
           cd target/${{ matrix.platform.target }}/release
 
-          tar czvf dank-${{ matrix.platform.platform }}.tar.gz dank
-          shasum -a 256 dank-${{ matrix.platform.platform }}.tar.gz > dank-${{ matrix.platform.platform }}.sha256
+          tar czvf dank-${{ env.VERSION }}-${{ matrix.platform.platform }}.tar.gz dank
+          shasum -a 256 dank-${{ env.VERSION }}-${{ matrix.platform.platform }}.tar.gz > dank-${{ env.VERSION }}-${{ matrix.platform.platform }}.sha256
       - name: Publish assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            target/${{ matrix.platform.target }}/release/dank-${{ matrix.platform.platform }}.tar.gz
-            target/${{ matrix.platform.target }}/release/dank-${{ matrix.platform.platform }}.sha256
+            target/${{ matrix.platform.target }}/release/dank-${{ env.VERSION }}-${{ matrix.platform.platform }}.tar.gz
+            target/${{ matrix.platform.target }}/release/dank-${{ env.VERSION }}-${{ matrix.platform.platform }}.sha256
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

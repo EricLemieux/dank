@@ -110,7 +110,7 @@ impl Api {
         let res = match self
             .http_client
             .get(url)
-            .header(reqwest::header::USER_AGENT, "dank 2.2.1")
+            .header(reqwest::header::USER_AGENT, "dank v2")
             .send()
         {
             Ok(a) => a,
